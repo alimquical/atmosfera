@@ -222,11 +222,13 @@
      ============================================================ */
   Store.serializarTodo = function () {
     const c = leer();
+    const Auth = global.App && global.App.Auth;
     return JSON.stringify({
       formato: 'ATMOSFERA-FH-NUBE',
-      version: 1,
+      version: 2,
       sincronizado: new Date().toISOString(),
       activo: Store.actual(),
+      usuarios: Auth ? Auth.serializar() : [],
       proyectos: c
     });
   };
@@ -236,6 +238,8 @@
     const pr = obj.proyectos || {};
     const n = Object.keys(pr).length;
     if (!n) throw new Error('La copia en la nube no contiene proyectos.');
+    const Auth = global.App && global.App.Auth;
+    if (Auth && obj.usuarios && obj.usuarios.length) Auth.restaurar(obj.usuarios);
     cache = pr;
     escribir();
     Store.setActual(obj.activo && pr[obj.activo] ? obj.activo : Object.keys(pr)[0]);

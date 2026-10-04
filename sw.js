@@ -24,6 +24,7 @@ const SHELL = [
   './assets/js/vistas-gestion.js',
   './assets/js/app-modales.js',
   './assets/js/cloud.js',
+  './assets/js/auth.js',
   './assets/lib/xlsx.full.min.js',
   './assets/lib/jspdf.umd.min.js',
   './assets/lib/chart.umd.js',

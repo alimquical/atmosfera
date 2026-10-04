@@ -38,6 +38,21 @@ Funciona **sin conexión** una vez abierta y guarda todo en el navegador (localS
 
 ---
 
+## Usuarios y permisos
+
+Al abrir la app pide usuario y clave (la sesión dura hasta cerrar el navegador):
+
+| Usuario | Clave | Rol |
+|---|---|---|
+| `superadmin` | `Atm2026#Super` | Todo: usuarios, ajustes globales, borrado total |
+| `admin` | `Atm2026#Admin` | Editar proyectos, egresos, pagos y reportes |
+| `demo` | `demo2026` | **Sólo lectura**: ve la demo, no modifica ni borra nada |
+
+Se crean, editan y borran en **Ajustes → 👥 Usuarios y permisos** (sólo el superadmin).
+Las credenciales viajan con la copia de la nube, así que valen también en el celular.
+
+---
+
 ## Nube — Google Drive
 
 La app se sincroniza con **tu propio Google Drive** mediante un servicio de Google Apps Script

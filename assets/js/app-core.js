@@ -156,7 +156,13 @@
 
     const r = E.resumen(p, mes);
     $('#pieProyecto').innerHTML = '<b>' + U.esc(p.nombre || '') + '</b><br>' +
-      r.nPersonas + ' miembro(s) · ' + U.esc(p.moneda) + ' · ' + U.mesCorto(mes);
+      r.nPersonas + ' miembro(s) · ' + U.esc(p.moneda) + ' · ' + U.mesCorto(mes) +
+      (App.Auth && App.Auth.usuario ? '<br><span style="opacity:.75">@' + U.esc(App.Auth.usuario.u) +
+        ' · ' + U.esc(App.Auth.rol()) + '</span>' : '');
+
+    if (App.Auth && App.Auth.pintarChip) App.Auth.pintarChip();
+    const btnP = $('#btnNuevoProyecto');
+    if (btnP) btnP.style.display = (App.Auth && App.Auth.esDemo()) ? 'none' : '';
   };
 
   /* ============================================================
@@ -193,6 +199,8 @@
      EVENTOS GLOBALES
      ============================================================ */
   function disparar(nombre, dataset, ev) {
+    const Auth = App.Auth;
+    if (Auth && !Auth.puede(nombre)) { Auth.rechazar(nombre); return; }
     const fn = App.acciones[nombre];
     if (!fn) { console.warn('Acción no registrada:', nombre); return; }
     fn(dataset, ev);
@@ -211,6 +219,7 @@
 
   document.addEventListener('change', function (ev) {
     const t = ev.target.closest('[data-chg]');
+    if (t && App.Auth && !App.Auth.puedeCambio(t.dataset.chg)) { App.Auth.rechazar(); return; }
     if (t && App.cambios[t.dataset.chg]) App.cambios[t.dataset.chg](t.dataset, ev, t);
   });
 
@@ -230,6 +239,7 @@
       App.recalcularModalDist();
     }
     if (t.dataset && t.dataset.chg && t.tagName === 'INPUT' && t.type === 'text') {
+      if (App.Auth && !App.Auth.puedeCambio(t.dataset.chg)) { App.Auth.rechazar(); return; }
       if (App.cambios[t.dataset.chg]) App.cambios[t.dataset.chg](t.dataset, ev, t);
     }
   });
@@ -311,8 +321,16 @@
   /* ============================================================
      ARRANQUE
      ============================================================ */
-  function iniciar() {
+  App.arrancar = function () {
+    if (App._arrancado) { App.render(); return; }
+    App._arrancado = true;
     Store.asegurarDatos();
+    App.navegar('panel');
+  };
+
+  function iniciar() {
+    const Auth = App.Auth;
+    const sesion = Auth ? Auth.init() : {};
 
     $('#selProyecto').addEventListener('change', function () {
       Store.setActual(this.value);
@@ -328,7 +346,10 @@
       App.render();
     });
 
-    $('#btnNuevoProyecto').addEventListener('click', () => App.acciones['nuevo-proyecto']());
+    $('#btnNuevoProyecto').addEventListener('click', function () {
+      if (App.Auth && !App.Auth.puede('nuevo-proyecto')) { App.Auth.rechazar('nuevo-proyecto'); return; }
+      App.acciones['nuevo-proyecto']();
+    });
     $('#btnExportar').addEventListener('click', () => App.navegar('reportes'));
     $('#btnInstalar').addEventListener('click', () => App.acciones['instalar']());
     $('#modalCerrar').addEventListener('click', () => App.cerrarModal());
@@ -344,7 +365,9 @@
       this.classList.remove('on');
     });
 
-    App.navegar('panel');
+    if (sesion) App.arrancar();
+    else if (Auth) Auth.mostrarLogin();
+    else App.arrancar();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);

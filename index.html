@@ -43,6 +43,9 @@
       <select id="selMes"></select>
     </div>
 
+    <button class="btn-top ghost" data-acc="sesion-info" id="btnUsuario" title="Sesión activa">
+      <span class="ico">👤</span> …
+    </button>
     <button class="btn-top ghost oculto-movil" id="btnNuevoProyecto" title="Crear un proyecto nuevo para otro hogar">
       ＋ Proyecto
     </button>
@@ -99,6 +102,32 @@
   <!-- ===================== TOASTS ===================== -->
   <div id="toasts"></div>
 
+  <!-- ===================== PANTALLA DE ACCESO ===================== -->
+  <div class="login-fondo" id="loginFondo">
+    <form class="login" id="loginForm" onsubmit="return false" autocomplete="on">
+      <div class="login-logo">AF</div>
+      <h1>Atmósfera Financiera</h1>
+      <p class="login-sub">Administración económica del hogar</p>
+
+      <div class="campo"><label>Usuario</label>
+        <input id="loginUser" autocomplete="username" placeholder="tu usuario" data-acc-enter="login-entrar"></div>
+      <div class="campo"><label>Clave</label>
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••"
+          data-acc-enter="login-entrar"></div>
+
+      <div class="login-error" id="loginError"></div>
+
+      <button class="btn primario login-btn" data-acc="login-entrar">Entrar</button>
+
+      <div class="login-demo">
+        <b>¿Solo querés mirar?</b><br>
+        usuario <code>demo</code> · clave <code>demo2026</code><br>
+        <span>Sólo lectura: no modifica ni borra nada.</span>
+      </div>
+      <div class="login-pie">Datos locales · sin servidores · v1.0</div>
+    </form>
+  </div>
+
   <button class="instalar-fijo" id="btnInstalar">📲 Instalar aplicación</button>
 
   <!-- ===================== LIBRERÍAS ===================== -->
@@ -123,6 +152,7 @@
   <script src="assets/js/vistas-gestion.js"></script>
   <script src="assets/js/app-modales.js"></script>
   <script src="assets/js/cloud.js"></script>
+  <script src="assets/js/auth.js"></script>
 </body>
 
 </html>

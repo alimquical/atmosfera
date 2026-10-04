@@ -484,3 +484,66 @@ table.datos .pct-pill { display: inline-block; min-width: 52px; }
   body.app-shell { overflow: visible; }
   .card { box-shadow: none; break-inside: avoid; }
 }
+
+/* ============================================================
+   ACCESO / USUARIOS
+   ============================================================ */
+.login-fondo {
+  position: fixed; inset: 0; z-index: 3000;
+  display: none; align-items: center; justify-content: center; padding: 18px;
+  background:
+    radial-gradient(1100px 640px at 15% -10%, #22356f 0%, rgba(34, 53, 111, 0) 60%),
+    radial-gradient(900px 600px at 110% 110%, #3b2a12 0%, rgba(59, 42, 18, 0) 55%),
+    var(--navy);
+}
+.login-fondo.on { display: flex; }
+
+.login {
+  width: 100%; max-width: 396px; background: #fff; border-radius: 20px;
+  padding: 30px 26px 22px; text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .45);
+}
+.login-logo {
+  width: 62px; height: 62px; margin: 0 auto 12px; border-radius: 18px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-3) 100%);
+  color: var(--accent-2); font-weight: 800; font-size: 22px;
+  display: flex; align-items: center; justify-content: center; letter-spacing: 1px;
+}
+.login h1 { margin: 0; font-size: 21px; color: var(--navy); }
+.login-sub { margin: 4px 0 20px; color: var(--txt-3); font-size: 13px; }
+.login .campo { text-align: left; margin-bottom: 12px; }
+.login .campo input { width: 100%; }
+.login-btn { width: 100%; margin-top: 6px; justify-content: center; }
+.login-error {
+  min-height: 18px; color: var(--red); font-size: 12.6px; font-weight: 600; margin-bottom: 4px;
+}
+.login-demo {
+  margin-top: 18px; padding: 12px 14px; border-radius: 12px; font-size: 12.6px;
+  background: #FFF7ED; border: 1px dashed var(--accent-2); color: var(--txt-2); line-height: 1.6;
+}
+.login-demo code {
+  background: var(--navy); color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 12px;
+}
+.login-demo span { color: var(--txt-3); font-size: 11.8px; }
+.login-pie { margin-top: 14px; color: var(--txt-3); font-size: 11.4px; }
+
+#btnUsuario .chip-rol {
+  margin-left: 6px; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 20px; letter-spacing: .4px;
+}
+.chip-rol.r-superadmin { background: #FEE2E2; color: #991B1B; }
+.chip-rol.r-admin { background: #DBEAFE; color: #1E40AF; }
+.chip-rol.r-demo { background: #DCFCE7; color: #166534; }
+
+.usu-lista { display: grid; gap: 8px; }
+.usu-fila {
+  display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+}
+.usu-fila .u-nom { font-weight: 700; font-size: 13.4px; }
+.usu-fila .u-meta { color: var(--txt-3); font-size: 11.8px; }
+.usu-fila .der { margin-left: auto; display: flex; gap: 6px; }
+
+@media print {
+  .login-fondo { display: none !important; }
+}

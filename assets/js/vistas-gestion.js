@@ -381,6 +381,27 @@
       '<button class="btn mini primario" data-acc="nube-guardar-cfg">💾 Guardar config</button>' +
       '</div></div>';
 
+    if (App.Auth && App.Auth.esSuper()) {
+      const lista = App.Auth.lista();
+      h += '<div class="card mt14"><div class="card-tit"><span class="ico">👥</span> Usuarios y permisos' +
+        '<span class="der"><button class="btn mini acento" data-acc="usuario-nuevo">＋ Nuevo usuario</button></span></div>' +
+        '<p class="small muted">Quién puede entrar en este dispositivo y qué puede hacer. ' +
+        'Estas credenciales viajan con la copia de la nube, así que valen también en el celular.</p>' +
+        '<div class="usu-lista">' +
+        lista.map(u => '<div class="usu-fila"><span class="chip-rol r-' + u.rol + '">' + U.esc(u.rol) + '</span>' +
+          '<div><div class="u-nom">' + U.esc(u.nombre) + '</div>' +
+          '<div class="u-meta">@' + U.esc(u.u) + ' · clave ' + (u.h ? '••••••••' : 'sin definir') + '</div></div>' +
+          '<div class="der">' +
+          '<button class="btn mini" data-acc="usuario-editar" data-id="' + U.esc(u.u) + '">✎</button>' +
+          '<button class="btn mini peligro" data-acc="usuario-borrar" data-id="' + U.esc(u.u) + '">🗑</button>' +
+          '</div></div>').join('') +
+        '</div>' +
+        '<div class="alerta n-info mt10"><div class="a-ico">🔑</div><div><b class="t">Credenciales iniciales</b>' +
+        '<p><code>superadmin</code> → <code>Atm2026#Super</code> · <code>admin</code> → <code>Atm2026#Admin</code> · ' +
+        '<code>demo</code> → <code>demo2026</code> (sólo lectura). Cambialas desde ✎.</p></div></div>' +
+        '</div>';
+    }
+
     h += '<div class="grid g2 mt14">' +
       catCard('categoriasEgreso', 'Categorías de egreso', p.categoriasEgreso) +
       catCard('categoriasIngreso', 'Categorías de ingreso', p.categoriasIngreso) +
