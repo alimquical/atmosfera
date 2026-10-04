@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Atmósfera Financiera del Hogar</title>
+  <meta name="description"
+    content="Administración financiera y económica mensual y anual del hogar: plan de gastos, distribución equilibrada por porcentajes, control de pagos, estadística y reportes.">
+  <meta name="theme-color" content="#101B3D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Atmósfera FH">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="iconos/icon-192.png">
+  <link rel="apple-touch-icon" href="iconos/icon-192.png">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+
+<body class="app-shell">
+
+  <!-- ===================== BARRA SUPERIOR ===================== -->
+  <header class="topbar">
+    <button class="btn-menu" id="btnMenu" aria-label="Menú">☰</button>
+
+    <div class="marca">
+      <div class="logo">AF</div>
+      <div class="txt">
+        <b>Atmósfera Financiera</b>
+        <span>Administración del hogar</span>
+      </div>
+    </div>
+
+    <div class="topbar-sep"></div>
+
+    <div class="selector" title="Proyecto activo">
+      <label>Proyecto</label>
+      <select id="selProyecto"></select>
+    </div>
+
+    <div class="selector" title="Mes de análisis">
+      <label>Período</label>
+      <select id="selMes"></select>
+    </div>
+
+    <button class="btn-top ghost oculto-movil" id="btnNuevoProyecto" title="Crear un proyecto nuevo para otro hogar">
+      ＋ Proyecto
+    </button>
+    <button class="btn-top" id="btnExportar" title="Exportar reportes (Excel, Word, PDF)">
+      ⬇ Exportar
+    </button>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ===================== CUERPO ===================== -->
+  <div class="layout">
+
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-grupo">Operación</div>
+      <div class="nav-item" data-vista="panel"><span class="ico">▦</span> Panel de control</div>
+      <div class="nav-item" data-vista="plan"><span class="ico">☰</span> Plan mensual</div>
+      <div class="nav-item" data-vista="pagos"><span class="ico">✓</span> Pagos
+        <span class="badge" id="badgePagos" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-vista="movimientos"><span class="ico">⇄</span> Movimientos</div>
+      <div class="nav-item" data-vista="personas"><span class="ico">☺</span> Personas y %</div>
+
+      <div class="nav-grupo">Inteligencia</div>
+      <div class="nav-item" data-vista="analisis"><span class="ico">◔</span> Análisis estadístico</div>
+      <div class="nav-item" data-vista="agente"><span class="ico">✦</span> Agente financiero</div>
+      <div class="nav-item" data-vista="reportes"><span class="ico">▤</span> Reportes y documentos</div>
+
+      <div class="nav-grupo">Gestión</div>
+      <div class="nav-item" data-vista="proyectos"><span class="ico">▣</span> Mis proyectos</div>
+      <div class="nav-item" data-vista="ajustes"><span class="ico">⚙</span> Ajustes y catálogos</div>
+
+      <div class="nav-pie">
+        <div id="pieProyecto">—</div>
+        <div style="margin-top:5px">v1.0 · PWA · Datos locales</div>
+      </div>
+    </nav>
+
+    <main class="contenido" id="contenido"></main>
+  </div>
+
+  <!-- ===================== MODAL ===================== -->
+  <div class="modal-fondo" id="modalFondo">
+    <div class="modal" id="modal">
+      <div class="modal-enc">
+        <h3 id="modalTitulo">Título</h3>
+        <button class="x" id="modalCerrar" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-cue" id="modalCuerpo"></div>
+      <div class="modal-pie" id="modalPie"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TOASTS ===================== -->
+  <div id="toasts"></div>
+
+  <button class="instalar-fijo" id="btnInstalar">📲 Instalar aplicación</button>
+
+  <!-- ===================== LIBRERÍAS ===================== -->
+  <script src="assets/lib/xlsx.full.min.js"></script>
+  <script src="assets/lib/jspdf.umd.min.js"></script>
+  <script src="assets/lib/chart.umd.js"></script>
+
+  <!-- ===================== NÚCLEO ===================== -->
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/engine.js"></script>
+  <script src="assets/js/stats.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/agent.js"></script>
+  <script src="assets/js/docs.js"></script>
+
+  <!-- ===================== APLICACIÓN ===================== -->
+  <script src="assets/js/app-core.js"></script>
+  <script src="assets/js/vistas-panel.js"></script>
+  <script src="assets/js/vistas-plan.js"></script>
+  <script src="assets/js/vistas-mov.js"></script>
+  <script src="assets/js/vistas-analisis.js"></script>
+  <script src="assets/js/vistas-gestion.js"></script>
+  <script src="assets/js/app-modales.js"></script>
+  <script src="assets/js/cloud.js"></script>
+</body>
+
+</html>
