@@ -110,7 +110,11 @@
     'agente-enviar', 'agente-enviar-con', 'agente-pregunta', 'agente-limpiar',
     'descargar-excel', 'descargar-word', 'descargar-pdf', 'descargar-txt',
     'descargar-csv-eg', 'descargar-csv-mov', 'descargar-csv-ing', 'descargar-json',
-    'exportar-proyecto-json'
+    'exportar-proyecto-json',
+    /* compras: consulta y descargas */
+    'tab-compras', 'compras-excel', 'compras-word', 'compras-pdf',
+    'compras-csv-boletas', 'compras-csv-precios',
+    'compras-chat-enviar', 'compras-chat-pregunta', 'compras-chat-limpiar'
   ]);
 
   const SOLO_LECTURA_CAMBIOS = /^(mes|proyecto|filtro|sel-|orden)/;

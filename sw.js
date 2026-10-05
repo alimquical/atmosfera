@@ -2,7 +2,7 @@
    Service Worker — Atmósfera Financiera del Hogar
    Cache-first para el shell completo: la app funciona offline.
    ============================================================ */
-const VERSION = 'atmosfera-v1.0.0';
+const VERSION = 'atmosfera-v1.1.0';
 const CACHE = VERSION + '-shell';
 
 const SHELL = [
@@ -16,12 +16,14 @@ const SHELL = [
   './assets/js/store.js',
   './assets/js/agent.js',
   './assets/js/docs.js',
+  './assets/js/compras-engine.js',
   './assets/js/app-core.js',
   './assets/js/vistas-panel.js',
   './assets/js/vistas-plan.js',
   './assets/js/vistas-mov.js',
   './assets/js/vistas-analisis.js',
   './assets/js/vistas-gestion.js',
+  './assets/js/vistas-compras.js',
   './assets/js/app-modales.js',
   './assets/js/cloud.js',
   './assets/js/auth.js',

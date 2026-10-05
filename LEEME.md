@@ -31,6 +31,7 @@ Funciona **sin conexión** una vez abierta y guarda todo en el navegador (localS
 | **Movimientos** | Libro de ingresos/egresos con filtros; se puede sincronizar desde el plan. |
 | **Personas y %** | Miembros, ingresos, estrategia de reparto (proporcional / equitativo / necesidad), % manual. |
 | **Análisis estadístico** | Descriptiva, histogramas, Pareto, tendencia mensual, exportar Excel estadístico. |
+| **🛒 Compras** | Catálogo de productos, libro de precios por supermercado, comparador, historial y boletas. |
 | **Agente financiero** | Chat con lenguaje natural: «¿cuánto gasto este mes?», «¿qué debo hacer?», «genera un informe». |
 | **Reportes y documentos** | Descarga Excel (8 hojas), Word, PDF, TXT, CSV y **paquete completo a una carpeta**. |
 | **Mis proyectos** | Un proyecto por hogar/cliente: crear, duplicar, exportar JSON, importar, eliminar. |
@@ -78,7 +79,26 @@ subí antes si querés conservar cambios.
 
 ---
 
-## Estructura
+## 🛒 Compras (catálogo, precios y boletas)
+
+Parte del ecosistema financiero: cada **boleta** queda guardada con sus productos, marcas,
+supermercado y fecha, y se **vincula automáticamente a un egreso** del plan (lo alimenta el
+análisis y los reportes). Seis pestañas:
+
+| Pestaña | Qué hace |
+|---|---|
+| **Panel** | KPI del mes, alertas de subas de precio, promociones, «por recomprar», gráficos. |
+| **Catálogo** | Productos con marca, categoría y unidad; crear/editar/borrar. |
+| **Comparador** | Precios vigentes por supermercado y **canasta comparada** (sólo entre tiendas con ≥60% de cobertura del catálogo). |
+| **Historial** | Serie de precios por producto con tendencia, duración del precio y subas/bajas. |
+| **Análisis** | Consumo por mes, frecuencia de compra, gasto por persona, gasto por tienda. |
+| **Asistente** | Chat que responde **y registra**: «pollo a la $1,29 en Tuti», «nuevo producto arroz 1 kg», «¿en qué tienda sale más barata la leche?». |
+
+Exportaciones en la barra: **Excel** (5 hojas), **Word**, **PDF**, **CSV de boletas** y **CSV de precios**.
+
+---
+
+
 
 ```
 ATMOSFERA APP/
@@ -96,6 +116,7 @@ ATMOSFERA APP/
     │   ├── stats.js           Estadística descriptiva y series
     │   ├── store.js           Persistencia, CRUD de proyectos, datos de ejemplo
     │   ├── agent.js           Diagnóstico, recomendaciones, informe, consultas
+    │   ├── compras-engine.js  Catálogo, precios, boletas, comparador, agente de compras
     │   ├── docs.js            Excel / Word / PDF / CSV / paquete
     │   ├── app-core.js        Estado, router, eventos, PWA
     │   ├── vistas-*.js        Render de cada pantalla

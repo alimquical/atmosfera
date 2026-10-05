@@ -338,9 +338,16 @@
     texto = String(texto || '').trim();
     if (!texto) return;
     App.chat.push({ rol: 'yo', texto: texto });
-    let res;
-    try { res = A.consultar(App.P(), texto); }
-    catch (err) { res = { html: '<p>Ocurrió un error al analizar: ' + U.esc(err.message) + '</p>' }; }
+    let res = null;
+    /* primero intentamos resolverlo con el asistente de compras */
+    if (window.AfCompras && window.AfCompras.consultar) {
+      try { res = window.AfCompras.consultar(App.P(), texto); }
+      catch (err) { console.error(err); res = null; }
+    }
+    if (!res) {
+      try { res = A.consultar(App.P(), texto); }
+      catch (err) { res = { html: '<p>Ocurrió un error al analizar: ' + U.esc(err.message) + '</p>' }; }
+    }
     App.chat.push({ rol: 'ia', html: res.html });
     App.render();
   };

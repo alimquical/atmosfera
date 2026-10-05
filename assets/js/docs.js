@@ -704,5 +704,414 @@
   };
 
 
+  /* ============================================================
+     COMPRAS DEL HOGAR — Excel, Word, PDF y CSV
+     ============================================================ */
+  function C_() { return (global.AfCompras || null); }
+
+  function nombreBoleta(p, b) {
+    const Cc = C_();
+    const t = Cc ? Cc.tienda(p, b.tiendaId) : null;
+    return t ? t.nombre : '—';
+  }
+
+  D.comprasExcel = function (p, mes) {
+    const Cc = C_();
+    if (!Cc) throw new Error('Módulo de compras no disponible.');
+    mes = mes || E.mesActivo(p);
+    const st = Cc.estadisticas(p, mes);
+    const cc = Cc.compararCanasta(p);
+    const tiendas = Cc.tiendas(p);
+    const prods = Cc.productos(p);
+    const wb = XLSX.utils.book_new();
+
+    /* 1. RESUMEN */
+    const resumen = [
+      ['ATMÓSFERA FINANCIERA DEL HOGAR — COMPRAS DEL HOGAR'],
+      ['Proyecto', p.nombre || ''],
+      ['Período', U.mesLargo(mes)],
+      ['Generado', new Date().toLocaleString('es-EC')],
+      [],
+      ['INDICADOR', 'VALOR', 'OBSERVACIÓN'],
+      ['Gasto en compras', st.total, U.mesLargo(mes)],
+      ['Boletas del mes', st.n, ''],
+      ['Ticket promedio', st.ticket, 'por boleta'],
+      ['% del gasto del hogar', st.share / 100, 'sobre egresos de ' + mon(p, st.egresosHogar)],
+      ['Productos en catálogo', prods.length, ''],
+      ['Tiendas', tiendas.length, ''],
+      ['Mediciones de precio', Cc.precios(p).length, 'historial'],
+      ['Promociones vigentes', Cc.promociones(p).length, ''],
+      [],
+      ['COMPARATIVO DE CANASTA', 'TOTAL', ''],
+      ['Mejor tienda', cc ? cc.mejor.tienda.nombre : '—', cc ? mon(p, cc.mejor.total) : ''],
+      ['Productos comunes', cc ? cc.nComunes : '', 'vendidos por todas las tiendas del ranking'],
+      ['Canasta mixta (más baratos)', cc ? cc.ideal.total : '', cc ? mon(p, cc.ideal.total) : ''],
+      ['Ahorro potencial', cc ? cc.ahorro : '', cc ? 'vs. tienda más cara' : ''],
+      [],
+      ['POR CATEGORÍA', 'TOTAL', '']
+    ].concat(st.porCategoria.map(c => [c.nombre, c.total, U.pct(c.total / Math.max(.01, st.total))]))
+      .concat([[], ['POR TIENDA', 'TOTAL', '']])
+      .concat(st.porTienda.map(t => [t.nombre, t.total, U.pct(t.total / Math.max(.01, st.total))]));
+
+    XLSX.utils.book_append_sheet(wb, D._hoja(resumen, [36, 22, 40]), 'RESUMEN');
+
+    /* 2. BOLETAS */
+    const fBol = [['FECHA', 'TIENDA', 'PRODUCTO', 'MARCA', 'CANTIDAD', 'UNIDAD', 'PRECIO UNIT.', 'SUBTOTAL', 'TOTAL BOLETA', 'EGRESO VINCULADO', 'NOTAS']];
+    Cc.boletasDe(p, mes).forEach(b => {
+      const total = Cc.totalBoleta(b);
+      (b.lineas || []).forEach((l, i) => {
+        const pr = Cc.producto(p, l.productoId);
+        fBol.push([
+          i === 0 ? b.fecha : '', i === 0 ? nombreBoleta(p, b) : '',
+          pr ? pr.nombre : '—', pr ? pr.marca : '',
+          l.cantidad, l.unidad || (pr ? pr.unidad : ''),
+          l.precioUnit, l.subtotal, i === 0 ? total : '',
+          b.egresoId ? 'Sí' : 'No', i === 0 ? (b.nota || '') : ''
+        ]);
+      });
+    });
+    fBol.push(['TOTAL', '', '', '', '', '', '', '', st.total, '', '']);
+    XLSX.utils.book_append_sheet(wb, D._hoja(fBol, [12, 20, 26, 16, 10, 9, 12, 12, 14, 16, 24]), 'BOLETAS');
+
+    /* 3. MATRIZ DE PRECIOS */
+    const fPrec = [['PRODUCTO', 'MARCA', 'CATEGORÍA', 'UNIDAD'].concat(tiendas.map(t => t.nombre)).concat(['MEJOR', 'TIENDA MEJOR', 'DIFERENCIA'])];
+    prods.forEach(pr => {
+      const cmp = Cc.comparativa(p, pr.id);
+      if (!cmp.length) return;
+      const min = cmp[0].precio, max = cmp[cmp.length - 1].precio;
+      const fila = [pr.nombre, pr.marca, pr.categoria, pr.unidad];
+      tiendas.forEach(t => {
+        const reg = cmp.find(x => x.tiendaId === t.id);
+        fila.push(reg ? reg.precio : '');
+      });
+      fila.push(min, cmp[0].tienda, U.round2(max - min));
+      fPrec.push(fila);
+    });
+    if (cc) {
+      const fila = ['CANASTA COMPLETA', '', '', ''];
+      cc.lista.forEach(x => fila.push(x.total));
+      fila.push(cc.ideal.total, 'Mixta (más baratos)', cc.ahorro);
+      fPrec.push(fila);
+    }
+    XLSX.utils.book_append_sheet(wb, D._hoja(fPrec, [26, 16, 18, 9].concat(tiendas.map(() => 12)).concat([12, 18, 13])), 'PRECIOS');
+
+    /* 4. CATÁLOGO Y CONSUMO */
+    const fCat = [['PRODUCTO', 'MARCA', 'CATEGORÍA', 'UNIDAD', 'PRESENTACIÓN', 'TIENDAS', 'MEJOR PRECIO',
+      'TIENDA', 'VARIACIÓN %', 'COMPRAS', 'ÚLTIMA COMPRA', 'DURA (DÍAS)', 'PRÓXIMA', 'GASTADO']];
+    prods.forEach(pr => {
+      const cmp = Cc.comparativa(p, pr.id);
+      const t = Cc.tendencia(p, pr.id);
+      const iv = Cc.intervalo(p, pr.id);
+      fCat.push([pr.nombre, pr.marca, pr.categoria, pr.unidad, pr.presentacion,
+        cmp.length, cmp[0] ? cmp[0].precio : '', cmp[0] ? cmp[0].tienda : '',
+        t.pct, iv.n, iv.ultima || '', iv.duracion || '', iv.proxima || '', iv.gastoTotal]);
+    });
+    XLSX.utils.book_append_sheet(wb, D._hoja(fCat, [26, 16, 18, 9, 18, 9, 12, 18, 11, 9, 14, 12, 14, 12]), 'CATALOGO');
+
+    /* 5. HISTORIAL COMPLETO DE PRECIOS (estacionalidad) */
+    const fHist = [['FECHA', 'PRODUCTO', 'MARCA', 'TIENDA', 'PRECIO', 'PROMOCIÓN', 'NOTA']];
+    Cc.precios(p).slice().sort((a, b) => String(a.fecha).localeCompare(String(b.fecha))).forEach(x => {
+      const pr = Cc.producto(p, x.productoId), t = Cc.tienda(p, x.tiendaId);
+      fHist.push([x.fecha, pr ? pr.nombre : '—', pr ? pr.marca : '', t ? t.nombre : '—',
+        x.precio, x.promo && x.promo.hasta ? 'Hasta ' + x.promo.hasta : '', x.nota || '']);
+    });
+    XLSX.utils.book_append_sheet(wb, D._hoja(fHist, [12, 26, 16, 20, 11, 18, 24]), 'HISTORIAL');
+
+    const nombre = U.slug(p.nombre) + '_compras_' + mes + '.xlsx';
+    XLSX.writeFile(wb, nombre);
+    return nombre;
+  };
+
+  D.comprasWord = function (p, mes) {
+    const Cc = C_();
+    if (!Cc) throw new Error('Módulo de compras no disponible.');
+    mes = mes || E.mesActivo(p);
+    const st = Cc.estadisticas(p, mes);
+    const cc = Cc.compararCanasta(p);
+    let c = '';
+
+    c += parrafo('ATMÓSFERA FINANCIERA DEL HOGAR', { alineado: 'center', negrita: true, tamano: 20, color: '1F3864', espacio: 60 });
+    c += parrafo('Informe de compras del hogar', { alineado: 'center', negrita: true, tamano: 14, color: 'EA580C' });
+    c += parrafo((p.nombre || '') + ' · ' + U.mesLargo(mes), { alineado: 'center', tamano: 11, color: '374151' });
+    c += parrafo('Generado: ' + new Date().toLocaleString('es-EC'), { alineado: 'center', tamano: 9, color: '6B7280', espacio: 200 });
+
+    c += parrafo('1. INDICADORES DE COMPRAS', { negrita: true, tamano: 12, color: '1F3864', espacio: 200 });
+    c += tabla([
+      ['Indicador', 'Valor', 'Observación'],
+      ['Gasto en compras', mon(p, st.total), U.mesLargo(mes)],
+      ['Boletas', String(st.n), 'ticket promedio ' + mon(p, st.ticket)],
+      ['% del gasto del hogar', U.pct(st.share / 100), 'sobre egresos de ' + mon(p, st.egresosHogar)],
+      ['Productos', String(Cc.productos(p).length), Cc.tiendas(p).length + ' tiendas'],
+      ['Por recomprar', String(Cc.porRecomprar(p).length), 'según frecuencia de consumo'],
+      ['Canasta mixta', cc ? mon(p, cc.ideal.total) : '—', 'cada producto en su más barato'],
+      ['Ahorro potencial', cc ? mon(p, cc.ahorro) : '—', 'vs. la tienda más cara']
+    ]);
+
+    if (cc) {
+      c += parrafo('2. COMPARATIVO DE CANASTA POR TIENDA (' + cc.nComunes +
+        ' productos comunes a todas ellas)', { negrita: true, tamano: 12, color: '1F3864', espacio: 200 });
+      const f = [['Tienda', 'Productos', 'Total canasta', 'Diferencia']];
+      cc.lista.forEach((x, i) => f.push([x.tienda.nombre, x.hay + '/' + Cc.productos(p).length,
+        mon(p, x.total), i === 0 ? 'Mejor' : '+' + mon(p, U.round2(x.total - cc.lista[0].total))]));
+      c += tabla(f);
+    }
+
+    c += parrafo('3. PRECIOS POR PRODUCTO (más barato a más caro)', { negrita: true, tamano: 12, color: '1F3864', espacio: 200 });
+    const fPrec = [['Producto', 'Mejor precio', 'Tienda', 'Más caro', 'Diferencia']];
+    Cc.productos(p).forEach(pr => {
+      const cmp = Cc.comparativa(p, pr.id);
+      if (!cmp.length) return;
+      fPrec.push([pr.nombre + (pr.marca ? ' · ' + pr.marca : ''), mon(p, cmp[0].precio), cmp[0].tienda,
+        mon(p, cmp[cmp.length - 1].precio),
+        mon(p, U.round2(cmp[cmp.length - 1].precio - cmp[0].precio))]);
+    });
+    c += tabla(fPrec);
+
+    c += parrafo('4. COMPRAS REGISTRADAS EN ' + U.mesLargo(mes).toUpperCase(), { negrita: true, tamano: 12, color: '1F3864', espacio: 200 });
+    const fBol = [['Fecha', 'Tienda', 'Ítems', 'Total', 'Egreso']];
+    Cc.boletasDe(p, mes).forEach(b => fBol.push([
+      b.fecha, nombreBoleta(p, b), String((b.lineas || []).length), mon(p, Cc.totalBoleta(b)),
+      b.egresoId ? 'Vinculado' : 'No']));
+    fBol.push(['TOTAL', '', '', mon(p, st.total), '']);
+    c += tabla(fBol);
+
+    c += parrafo('5. CONSUMO Y FRECUENCIA', { negrita: true, tamano: 12, color: '1F3864', espacio: 200 });
+    const fCons = [['Producto', 'Compras', 'Última', 'Dura (días)', 'Próxima', 'Estado', 'Gastado']];
+    Cc.productos(p).forEach(pr => {
+      const iv = Cc.intervalo(p, pr.id);
+      if (!iv.n) return;
+      fCons.push([pr.nombre, String(iv.n), iv.ultima || '', String(iv.duracion || '—'),
+        iv.proxima || '—', iv.estado === 'recomprar' ? 'RECOMPRAR' : iv.estado === 'pronto' ? 'PRONTO' : 'AL DÍA',
+        mon(p, iv.gastoTotal)]);
+    });
+    c += tabla(fCons);
+
+    const alertas = Cc.alertas(p);
+    if (alertas.length) {
+      c += parrafo('6. ALERTAS Y RECOMENDACIONES', { negrita: true, tamano: 12, color: '1F3864', espacio: 200 });
+      c += tabla([['Área', 'Alerta', 'Detalle']]
+        .concat(alertas.map(a => [a.area, a.titulo, a.texto])));
+    }
+
+    c += parrafo('Documento generado automáticamente por ATMÓSFERA FINANCIERA DEL HOGAR · compras del hogar. ' +
+      'Cifras en ' + (p.moneda || 'USD') + '.', {
+      alineado: 'center', tamano: 8, color: '9CA3AF', cursiva: true, espacio: 300
+    });
+
+    const zip = U.zip([
+      {
+        nombre: '[Content_Types].xml',
+        datos: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+          '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+          '<Default Extension="xml" ContentType="application/xml"/>' +
+          '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+          '</Types>'
+      },
+      {
+        nombre: '_rels/.rels',
+        datos: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+          '</Relationships>'
+      },
+      { nombre: 'word/document.xml', datos: construirDocumento(c) }
+    ]);
+
+    const nombre = U.slug(p.nombre) + '_compras_' + mes + '.docx';
+    U.descargar(new Blob([zip], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), nombre);
+    return nombre;
+  };
+
+  D.comprasPdfDoc = function (p, mes) {
+    const Cc = C_();
+    if (!Cc) throw new Error('Módulo de compras no disponible.');
+    mes = mes || E.mesActivo(p);
+    const st = Cc.estadisticas(p, mes);
+    const cc = Cc.compararCanasta(p);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const W = 210, H = 297, ML = 15, MR = 15, CW = W - ML - MR;
+    let y = 0, pagina = 1;
+    const AZUL = [31, 56, 100], NARANJA = [234, 88, 12], GRIS = [107, 114, 128],
+      OSCURO = [17, 24, 39], CLARO = [243, 244, 246], VERDE = [22, 163, 74];
+
+    function pie() {
+      doc.setDrawColor(220, 220, 220);
+      doc.line(ML, H - 14, W - MR, H - 14);
+      doc.setFontSize(7.5); doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+      doc.text('ATMÓSFERA FINANCIERA — COMPRAS · ' + (p.nombre || ''), ML, H - 10);
+      doc.text('Pág. ' + pagina, W - MR, H - 10, { align: 'right' });
+    }
+    function nuevaPagina() { doc.addPage(); pagina++; y = 20; }
+    function espacio(h) { if (y + h > H - 20) { pie(); nuevaPagina(); } }
+    function titulo(tam, color, txt) {
+      espacio(tam + 6);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(tam);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(txt, ML, y); y += tam * 0.5 + 2;
+    }
+    function texto(txt, tam, color, negrita) {
+      doc.setFont('helvetica', negrita ? 'bold' : 'normal');
+      doc.setFontSize(tam || 9.5);
+      doc.setTextColor(color ? color[0] : OSCURO[0], color ? color[1] : OSCURO[1], color ? color[2] : OSCURO[2]);
+      doc.splitTextToSize(String(txt), CW).forEach(l => {
+        espacio(5); doc.text(l, ML, y); y += (tam || 9.5) * 0.52;
+      });
+    }
+    function tablaPdf(filas, anchos, op) {
+      op = op || {};
+      const fs = op.fs || 8, pad = 1.6;
+      filas.forEach((fila, i) => {
+        doc.setFontSize(fs);
+        doc.setFont('helvetica', i === 0 && op.cabecera !== false ? 'bold' : 'normal');
+        let alto = 0;
+        fila.forEach((celda, ci) => {
+          const w = anchos[ci] * CW / 100;
+          alto = Math.max(alto, doc.splitTextToSize(String(celda === undefined || celda === null ? '' : celda), w - 3).length * (fs * 0.42) + pad);
+        });
+        espacio(alto + 1);
+        const esCab = i === 0 && op.cabecera !== false;
+        if (esCab) { doc.setFillColor(AZUL[0], AZUL[1], AZUL[2]); doc.rect(ML, y - fs * 0.35, CW, alto + pad, 'F'); }
+        else if (i % 2 === 0) { doc.setFillColor(CLARO[0], CLARO[1], CLARO[2]); doc.rect(ML, y - fs * 0.35, CW, alto + pad, 'F'); }
+        let x = ML;
+        fila.forEach((celda, ci) => {
+          const w = anchos[ci] * CW / 100;
+          doc.setTextColor(esCab ? 255 : OSCURO[0], esCab ? 255 : OSCURO[1], esCab ? 255 : OSCURO[2]);
+          let yy = y;
+          doc.splitTextToSize(String(celda === undefined || celda === null ? '' : celda), w - 3)
+            .forEach(l => { doc.text(l, x + 1.5, yy); yy += fs * 0.42; });
+          x += w;
+        });
+        y += alto + pad;
+        doc.setDrawColor(225, 225, 225);
+        doc.line(ML, y - pad * 0.4, ML + CW, y - pad * 0.4);
+      });
+      y += 2;
+    }
+
+    doc.setFillColor(AZUL[0], AZUL[1], AZUL[2]);
+    doc.rect(0, 0, W, 38, 'F');
+    doc.setFillColor(NARANJA[0], NARANJA[1], NARANJA[2]);
+    doc.rect(0, 38, W, 2.5, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(17);
+    doc.text('ATMOSFERA FINANCIERA DEL HOGAR', ML, 17);
+    doc.setFontSize(11); doc.text('Informe de compras del hogar', ML, 25);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text((p.nombre || '') + '  ·  ' + U.mesLargo(mes), ML, 32);
+    y = 50;
+    doc.setFontSize(8.5); doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+    doc.text('Generado: ' + new Date().toLocaleString('es-EC'), ML, y); y += 8;
+
+    const kpis = [
+      ['GASTO COMPRAS', mon(p, st.total), NARANJA],
+      ['BOLETAS', String(st.n), AZUL],
+      ['TICKET PROM.', mon(p, st.ticket), AZUL],
+      ['% DEL HOGAR', U.pct(st.share / 100), VERDE]
+    ];
+    const bw = (CW - 6 * 3) / 4;
+    espacio(24);
+    kpis.forEach((k, i) => {
+      const x = ML + i * (bw + 6);
+      doc.setFillColor(CLARO[0], CLARO[1], CLARO[2]); doc.roundedRect(x, y, bw, 20, 2, 2, 'F');
+      doc.setFillColor(k[2][0], k[2][1], k[2][2]); doc.rect(x, y, 1.6, 20, 'F');
+      doc.setFontSize(7); doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+      doc.setFont('helvetica', 'bold'); doc.text(k[0], x + 5, y + 7);
+      doc.setFontSize(11); doc.setTextColor(OSCURO[0], OSCURO[1], OSCURO[2]);
+      doc.text(String(k[1]), x + 5, y + 15);
+    });
+    y += 26;
+
+    if (cc) {
+      titulo(11, AZUL, 'Comparativo de canasta (' + cc.nComunes + ' productos comunes)');
+      const f = [['Tienda', 'Productos', 'Total', 'Diferencia']];
+      cc.lista.forEach((x, i) => f.push([x.tienda.nombre, x.hay + '/' + Cc.productos(p).length,
+        mon(p, x.total), i === 0 ? 'MEJOR' : '+' + mon(p, U.round2(x.total - cc.lista[0].total))]));
+      tablaPdf(f, [34, 18, 24, 24]);
+      texto('Comprando cada producto en su tienda más barata: ' + mon(p, cc.ideal.total) +
+        ' (ahorro de ' + mon(p, cc.ahorro) + ').', 9, NARANJA, true);
+      y += 3;
+    }
+
+    titulo(11, AZUL, 'Precios por producto');
+    const fPrec = [['Producto', 'Mejor', 'Tienda', 'Más caro', 'Dif.']];
+    Cc.productos(p).forEach(pr => {
+      const cmp = Cc.comparativa(p, pr.id);
+      if (!cmp.length) return;
+      fPrec.push([pr.nombre, mon(p, cmp[0].precio), cmp[0].tienda,
+        mon(p, cmp[cmp.length - 1].precio), mon(p, U.round2(cmp[cmp.length - 1].precio - cmp[0].precio))]);
+    });
+    tablaPdf(fPrec, [32, 16, 24, 16, 12]);
+
+    titulo(11, AZUL, 'Compras de ' + U.mesLargo(mes));
+    const fBol = [['Fecha', 'Tienda', 'Ítems', 'Total']];
+    Cc.boletasDe(p, mes).forEach(b => fBol.push([b.fecha, nombreBoleta(p, b),
+      String((b.lineas || []).length), mon(p, Cc.totalBoleta(b))]));
+    fBol.push(['TOTAL', '', '', mon(p, st.total)]);
+    tablaPdf(fBol, [22, 40, 16, 22]);
+
+    titulo(11, AZUL, 'Consumo y frecuencia');
+    const fCons = [['Producto', 'N', 'Última', 'Dura', 'Próxima', 'Estado']];
+    Cc.productos(p).forEach(pr => {
+      const iv = Cc.intervalo(p, pr.id);
+      if (!iv.n) return;
+      fCons.push([pr.nombre, String(iv.n), iv.ultima || '', String(iv.duracion || '—'),
+        iv.proxima || '—', iv.estado === 'recomprar' ? 'RECOMPRAR' : iv.estado === 'pronto' ? 'PRONTO' : 'AL DÍA']);
+    });
+    if (fCons.length > 1) tablaPdf(fCons, [30, 8, 18, 12, 18, 14]);
+
+    const alertas = Cc.alertas(p);
+    if (alertas.length) {
+      titulo(11, AZUL, 'Alertas y recomendaciones');
+      const fA = [['Área', 'Alerta', 'Detalle']];
+      alertas.slice(0, 8).forEach(a => fA.push([a.area, a.titulo, a.texto]));
+      tablaPdf(fA, [16, 30, 54]);
+    }
+
+    pie();
+    return doc;
+  };
+
+  D.comprasPDF = function (p, mes) {
+    const doc = D.comprasPdfDoc(p, mes);
+    const nombre = U.slug(p.nombre) + '_compras_' + (mes || E.mesActivo(p)) + '.pdf';
+    doc.save(nombre);
+    return nombre;
+  };
+
+  D.csvCompras = function (p, mes) {
+    const Cc = C_();
+    if (!Cc) throw new Error('Módulo de compras no disponible.');
+    mes = mes || E.mesActivo(p);
+    const filas = [['Fecha', 'Tienda', 'Producto', 'Marca', 'Cantidad', 'Unidad', 'Precio unitario', 'Subtotal', 'Total boleta', 'Egreso vinculado', 'Notas']];
+    Cc.boletasOrden(p).forEach(b => {
+      const total = Cc.totalBoleta(b);
+      (b.lineas || []).forEach((l, i) => {
+        const pr = Cc.producto(p, l.productoId);
+        filas.push([
+          i === 0 ? b.fecha : '', i === 0 ? nombreBoleta(p, b) : '',
+          pr ? pr.nombre : '', pr ? pr.marca : '', l.cantidad, l.unidad || '',
+          l.precioUnit, l.subtotal, i === 0 ? total : '',
+          b.egresoId ? 'Sí' : 'No', i === 0 ? (b.nota || '') : ''
+        ]);
+      });
+    });
+    return '\ufeff' + csvDe(filas);
+  };
+
+  D.csvPrecios = function (p) {
+    const Cc = C_();
+    if (!Cc) throw new Error('Módulo de compras no disponible.');
+    const filas = [['Fecha', 'Producto', 'Marca', 'Categoria', 'Unidad', 'Tienda', 'Precio', 'Promocion hasta', 'Nota']];
+    Cc.precios(p).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).forEach(x => {
+      const pr = Cc.producto(p, x.productoId), t = Cc.tienda(p, x.tiendaId);
+      filas.push([x.fecha, pr ? pr.nombre : '', pr ? pr.marca : '', pr ? pr.categoria : '',
+        pr ? pr.unidad : '', t ? t.nombre : '', x.precio,
+        x.promo && x.promo.hasta ? x.promo.hasta : '', x.nota || '']);
+    });
+    return '\ufeff' + csvDe(filas);
+  };
+
   global.AfDocs = D;
 })(window);

@@ -365,6 +365,11 @@
       cantidad: m[3], tipo: m[4], lugar: m[5]
     }));
 
+    /* ---- Compras del hogar (catálogo, precios y boletas) ---- */
+    if (global.AfCompras && global.AfCompras.semilla) {
+      try { global.AfCompras.semilla(p); } catch (e) { console.warn('semilla compras', e); }
+    }
+
     Store.guardar(p);
     Store.setActual(p.id);
     return p;
